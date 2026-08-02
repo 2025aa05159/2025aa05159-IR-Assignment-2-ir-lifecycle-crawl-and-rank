@@ -69,5 +69,5 @@ IR_ASSIGNMENT-2/
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ir-assignment-2-ir-lifecycle-crawl-and-rank-suresh-kumar.streamlit.app/)
 
-**Live Demo:** [Click here to launch the App 🚀](https://ir-assignment-1-searchengine-suresh-kumar.streamlit.app/)
+**Live Demo:** [Click here to launch the App 🚀](https://ir-assignment-2-ir-lifecycle-crawl-and-rank-suresh-kumar.streamlit.app/?q=213123)
 
