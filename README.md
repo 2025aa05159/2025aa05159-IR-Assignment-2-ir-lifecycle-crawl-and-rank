@@ -16,6 +16,7 @@ The goal of this assignment is to extend foundational Information Retrieval conc
 5. **System Evaluation:** Computing standard IR benchmarking metrics (Precision, Recall, MAP, MRR, NDCG@5) against ground-truth datasets.
 6. **UI Integration:** Deploying the entire multi-engine architecture into an interactive, zero-latency web interface via Streamlit.
 
+## 2. Source & Data Pipeline
 **Source & Data Pipeline:** 
 The system employs a robust 3-Tier Data Pipeline to ensure continuous availability in restricted lab environments:
 1. **Custom Upload:** Prioritizes user-uploaded `.csv` datasets via the Streamlit UI.
@@ -25,8 +26,7 @@ The system employs a robust 3-Tier Data Pipeline to ensure continuous availabili
 **Format & Processing:** 
 Regardless of the source (CSV or Live Web), documents are normalized into unified in-memory metadata dictionaries (Titles, URLs, Source) mapped to raw textual content. The ingestion pipeline rigorously filters out duplicate documents before passing the clean tech data into the text mining engine.
 
-**Format & Processing:** 
-Regardless of the source (CSV or Live Web), documents are normalized into unified in-memory metadata dictionaries (Titles, URLs, Source) mapped to raw textual content. The ingestion pipeline rigorously filters out duplicate documents before passing the clean data into the text mining engine.
+
 ## 3. Project Structure
 This repository maintains a fully decoupled, modular architecture:
 
@@ -42,7 +42,7 @@ IR_ASSIGNMENT-2/
 ├── requirements.txt        # Virtual lab environment external package declarations
 └── README.md               # Code deployment and evaluation documentation
 
-
+```
 ## 4. Architectural Highlights
 
 - **Fused Search Scoring:** Queries don't just rely on keyword matching (TF-IDF); they are multiplied by the synthetic network graph's PageRank score to ensure authoritative documents rank higher.
@@ -51,12 +51,23 @@ IR_ASSIGNMENT-2/
 
 
 
-## How to Run Locally
+# 6. How to Run Locally
+1.  **Clone the repository:**
+    ```bash
+    git clone [[https://github.com/2026aa05159/IR-Assignment-1-SearchEngine.git](https://github.com/2026aa05159/IR-Assignment-1-SearchEngine.git)](https://github.com/2025aa05159/2025aa05159-IR-Assignment-2-ir-lifecycle-crawl-and-rank)
+    ```
+2.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **Run the Streamlit App:**
+    ```bash
+    streamlit run app.py
+    ```
+	
+## 7. 🔍 End-to-End IR System Platform
 
-**1. Install dependencies:**
-```bash
-pip install -r requirements.txt
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ir-assignment-2-ir-lifecycle-crawl-and-rank-suresh-kumar.streamlit.app/)
 
-**2. Run the Streamlit App::**
-```bash
-python -m streamlit run app.py
+**Live Demo:** [Click here to launch the App 🚀](https://ir-assignment-1-searchengine-suresh-kumar.streamlit.app/)
+
