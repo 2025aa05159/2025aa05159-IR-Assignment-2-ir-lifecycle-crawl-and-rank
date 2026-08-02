@@ -18,7 +18,7 @@ from web_search import WebSearchEngine
 from recommender import RecommenderEngine
 from evaluation import IREvaluator
 
-# Define the RSS seeds directly here instead of importing them
+# Define the RSS seeds directly here
 RSS_SEEDS = [
     "http://export.arxiv.org/rss/cs.IR",  
     "http://export.arxiv.org/rss/cs.CL",  
@@ -74,9 +74,9 @@ st.markdown("### 🗄️ Dataset Configuration")
 with st.expander("🔍 What is happening behind the scenes? (3-Tier Data Pipeline)"):
     st.write("To guarantee zero downtime and reproducible evaluation metrics, this system uses a multi-tier data loading strategy:")
     st.markdown("""
-    * **Tier 1 (Custom Upload):** The system prioritizes any custom `.csv` dataset you upload via the sidebar.
-    * **Tier 2 (Live Web Crawl):** You can trigger a live scraper to fetch fresh web data dynamically.
-    * **Tier 3 (Default Fallback):** If no file is uploaded and the live crawl fails, the system instantly falls back to a pre-loaded baseline `data.csv`.
+    * **Tier 1 (Custom Upload):** The system prioritizes any custom `.csv` dataset you upload via the selector.
+    * **Tier 2 (Live Web Crawl - Default):** Fetches fresh web data dynamically from live RSS feeds.
+    * **Tier 3 (Default Fallback):** If no file is uploaded and the live crawl fails, the system safely falls back to a pre-loaded baseline `data.csv`.
     """)
     
     st.markdown("---")
@@ -89,7 +89,6 @@ with st.expander("🔍 What is happening behind the scenes? (3-Tier Data Pipelin
     })
     st.dataframe(schema_df, hide_index=True, use_container_width=True)
     
-    # Optional: Provide a downloadable template button
     sample_csv = "doc_id,title,source,url,content\nDoc_1,Sample Title,Manual,#,This is sample content."
     st.download_button(
         label="📥 Download Sample CSV Template",
@@ -98,15 +97,23 @@ with st.expander("🔍 What is happening behind the scenes? (3-Tier Data Pipelin
         mime="text/csv"
     )
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns([2, 2, 1])
 with col1:
     uploaded_file = st.file_uploader("1. Upload Custom Dataset (CSV)", type=["csv"])
 with col2:
-    st.write("2. Or fetch fresh data")
-    trigger_crawl = st.button("🌐 Trigger Live Web Crawl")
+    data_source_mode = st.radio(
+        "2. Active System Data Source:",
+        ["🌐 Live Web Crawl (Default)", "📁 Baseline CSV (data.csv)"],
+        index=0
+    )
+with col3:
+    st.write("3. Crawl Action")
+    if st.button("🔄 Force Re-Crawl"):
+        st.cache_resource.clear()
+        st.rerun()
 
 @st.cache_resource(show_spinner="Initializing Information Retrieval System...")
-def initialize_ir_system(uploaded_buffer, crawl_triggered):
+def initialize_ir_system(uploaded_buffer, source_mode):
     """
     Executes crawler or loads CSV, then initializes all downstream IR engines once.
     Caches the state in RAM for fast Streamlit re-renders.
@@ -115,12 +122,9 @@ def initialize_ir_system(uploaded_buffer, crawl_triggered):
     contents_map = {}
     crawler_stats = {"duplicate_documents_filtered": 0}
     
-    # Priority 1 & 3: CSV File Handling (Custom Upload or Default)
-    if uploaded_buffer is not None or (not crawl_triggered and os.path.exists("data.csv")):
-        file_to_read = uploaded_buffer if uploaded_buffer is not None else "data.csv"
-        df = pd.read_csv(file_to_read)
-        
-        # Convert CSV DataFrame into the structures expected by your engines
+    # Priority 1: Custom Uploaded CSV File
+    if uploaded_buffer is not None:
+        df = pd.read_csv(uploaded_buffer)
         for idx, row in df.iterrows():
             doc_id = str(row.get("doc_id", f"Doc_{idx+1}"))
             contents_map[doc_id] = str(row.get("content", ""))
@@ -130,13 +134,41 @@ def initialize_ir_system(uploaded_buffer, crawl_triggered):
                 "source": str(row.get("source", "CSV Upload")),
                 "url": str(row.get("url", "#"))
             })
-        crawler_stats["source_type"] = "CSV"
-        
-    # Priority 2: Live Crawl (or Fallback if CSV is missing)
+        crawler_stats["source_type"] = "CSV Upload"
+
+    # Priority 2: Explicit Baseline CSV requested
+    elif source_mode == "📁 Baseline CSV (data.csv)" and os.path.exists("data.csv"):
+        df = pd.read_csv("data.csv")
+        for idx, row in df.iterrows():
+            doc_id = str(row.get("doc_id", f"Doc_{idx+1}"))
+            contents_map[doc_id] = str(row.get("content", ""))
+            metadata_list.append({
+                "doc_id": doc_id,
+                "title": str(row.get("title", f"Document {idx+1}")),
+                "source": str(row.get("source", "CSV Default")),
+                "url": str(row.get("url", "#"))
+            })
+        crawler_stats["source_type"] = "CSV Default"
+
+    # Priority 3 (DEFAULT): Live Web Crawl
     else:
-        # Calls your custom crawler script
-        metadata_list, contents_map, crawler_stats = run_crawler_pipeline(use_fallback=not crawl_triggered)
-        crawler_stats["source_type"] = "Live Crawl"
+        try:
+            metadata_list, contents_map, crawler_stats = run_crawler_pipeline(use_fallback=False)
+            crawler_stats["source_type"] = "Live Crawl"
+        except Exception as e:
+            # Fall back to data.csv if live web fetch encounters network/parsing error
+            if os.path.exists("data.csv"):
+                df = pd.read_csv("data.csv")
+                for idx, row in df.iterrows():
+                    doc_id = str(row.get("doc_id", f"Doc_{idx+1}"))
+                    contents_map[doc_id] = str(row.get("content", ""))
+                    metadata_list.append({
+                        "doc_id": doc_id,
+                        "title": str(row.get("title", f"Document {idx+1}")),
+                        "source": str(row.get("source", "CSV Fallback")),
+                        "url": str(row.get("url", "#"))
+                    })
+                crawler_stats["source_type"] = "CSV (Fallback)"
 
     # Initialize Downstream Engines
     mining_engine = TextMiningEngine(contents_map)
@@ -156,12 +188,12 @@ def initialize_ir_system(uploaded_buffer, crawl_triggered):
     }
 
 # Load engines into state based on UI triggers
-ir_system = initialize_ir_system(uploaded_file, trigger_crawl)
+ir_system = initialize_ir_system(uploaded_file, data_source_mode)
 
-if ir_system["source"] == "CSV":
-    st.success("✅ System successfully loaded from CSV dataset.")
+if "CSV" in ir_system["source"]:
+    st.warning(f"📁 System running on **{ir_system['source']}** dataset.")
 else:
-    st.info("🌐 System successfully loaded via Live Crawler / Web Engine.")
+    st.success("🌐 System successfully loaded via Live Crawler / Web Engine.")
 
 st.markdown("---")
 
@@ -238,7 +270,6 @@ elif navigation_choice == "🕷️ Web Crawling":
     with st.expander("⚙️ Crawler Configuration Options", expanded=True):
         selected_seeds = st.multiselect("Active Seed Sources:", RSS_SEEDS, default=RSS_SEEDS)
         crawl_depth = st.slider("Crawl Depth Horizon:", min_value=1, max_value=3, value=1)
-        st.info("To trigger a live crawl, use the button at the top of the application.")
 
     st.subheader("📄 Extracted Document Metadata Repository")
     metadata_df = pd.DataFrame(ir_system["metadata"])
@@ -269,15 +300,13 @@ elif navigation_choice == "📊 Text Mining & Indexing":
         st.success(f"**Assigned Category:** {doc_category}")
 
 # ==============================================================================
-# TAB 4: COMPARATIVE ANALYSIS (NEW - TASK C)
+# TAB 4: COMPARATIVE ANALYSIS (TASK C)
 # ==============================================================================
 elif navigation_choice == "⚖️ Comparative Analysis (Task C)":
     st.header("⚖️ Comparative Analysis of Preprocessing (Task C)")
-    st.write("Compare how different normalization and vectorization strategies affect the vocabulary size and processing time.")
+    st.write("Compare how different normalization and vectorization strategies affect vocabulary size and processing speed.")
 
-    # Extract raw documents from the initialized system
     raw_documents = list(ir_system["contents"].values())
-
     miner = TextMiner()
 
     col1, col2 = st.columns(2)
@@ -306,8 +335,7 @@ elif navigation_choice == "⚖️ Comparative Analysis (Task C)":
         })
         
         st.table(comparison_df)
-        
-        st.info("**Observation:** Notice how Lemmatization generally produces a slightly different vocabulary size than Stemming, and CountVectorizer differs from TF-IDF in feature weighting (though they share the same vocabulary if normalization is identical).")
+        st.info("**Observation:** Lemmatization generally produces a slightly larger vocabulary than Stemming due to full morphological accuracy, while CountVectorizer and TF-IDF produce matching vocabulary sizes given the same normalization strategy.")
 
 # ==============================================================================
 # TAB 5: SEARCH & PAGERANK
@@ -382,7 +410,6 @@ elif navigation_choice == "📈 System Evaluation":
     st.header("📈 Evaluation Metrics & IR Benchmarking")
     st.write("Measure Precision, Recall, MAP, MRR, and NDCG@5 against ground-truth sets.")
     
-    # Ground truth evaluation simulation controls
     retrieved_sim = ["Doc_1", "Doc_29", "Doc_3", "Doc_28", "Doc_12", "Doc_8"]
     ground_truth_sim = ["Doc_1", "Doc_3", "Doc_12"]
     
