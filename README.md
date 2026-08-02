@@ -19,8 +19,11 @@ The goal of this assignment is to extend foundational Information Retrieval conc
 **Source & Data Pipeline:** 
 The system employs a robust 3-Tier Data Pipeline to ensure continuous availability in restricted lab environments:
 1. **Custom Upload:** Prioritizes user-uploaded `.csv` datasets via the Streamlit UI.
-2. **Live Web Crawling:** Dynamically fetches from ArXiv RSS Feeds (cs.IR, cs.CL, cs.AI) if triggered.
-3. **Static Fallback:** Defaults to a bundled `data.csv` corpus if no upload is provided and live crawling fails.
+2. **Live Web Crawling:** Dynamically fetches from live technology web sources and tech data feeds if triggered.
+3. **Static Fallback:** Defaults to a bundled `data.csv` corpus containing baseline tech documents if no upload is provided and live crawling fails.
+
+**Format & Processing:** 
+Regardless of the source (CSV or Live Web), documents are normalized into unified in-memory metadata dictionaries (Titles, URLs, Source) mapped to raw textual content. The ingestion pipeline rigorously filters out duplicate documents before passing the clean tech data into the text mining engine.
 
 **Format & Processing:** 
 Regardless of the source (CSV or Live Web), documents are normalized into unified in-memory metadata dictionaries (Titles, URLs, Source) mapped to raw textual content. The ingestion pipeline rigorously filters out duplicate documents before passing the clean data into the text mining engine.
