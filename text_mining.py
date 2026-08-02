@@ -1,17 +1,24 @@
-
 import re
 import math
+import time
 from collections import Counter
 
 # --- NLTK Imports & Automatic Resource Handling ---
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 
-# Quietly check and fetch required NLTK resources for Virtual Lab compatibility
-for resource in ['stopwords', 'punkt', 'punkt_tab']:
+# --- Scikit-Learn Imports for Comparative Analysis (Task C) ---
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+
+# Quietly check and fetch required NLTK resources for Streamlit Cloud compatibility
+for resource in ['stopwords', 'punkt', 'punkt_tab', 'wordnet', 'omw-1.4']:
     try:
-        nltk.data.find(f'tokenizers/{resource}' if 'punkt' in resource else f'corpora/{resource}')
+        if 'punkt' in resource:
+            nltk.data.find(f'tokenizers/{resource}')
+        else:
+            nltk.data.find(f'corpora/{resource}')
     except LookupError:
         nltk.download(resource, quiet=True)
 
@@ -37,6 +44,9 @@ def process_and_tokenize_text(text_content):
     ]
     return filtered_tokens
 
+# ==============================================================================
+# CLASS 1: TEXT MINING ENGINE (Used for primary indexing and keyword search)
+# ==============================================================================
 class TextMiningEngine:
     def __init__(self, document_contents):
         """
@@ -67,7 +77,7 @@ class TextMiningEngine:
     def _calculate_corpus_tfidf(self):
         """
         Calculates term frequency (TF), inverse document frequency (IDF), 
-        and overall TF-IDF weights across our article collection.
+        and overall TF-IDF weights across the article collection.
         """
         total_docs = len(self.contents)
         if total_docs == 0:
@@ -111,7 +121,6 @@ class TextMiningEngine:
             return []
         
         word_scores = self.tfidf_matrix[doc_id]
-        # Sort words in descending order of their TF-IDF weight
         ranked_keywords = sorted(word_scores.items(), key=lambda item: item[1], reverse=True)
         return ranked_keywords[:top_n]
 
@@ -122,7 +131,6 @@ class TextMiningEngine:
         """
         words = self.parsed_tokens.get(doc_id, [])
         
-        # Category keyword sets for classification matching
         ai_terms = {'ai', 'neural', 'transformer', 'model', 'openai', 'chatgpt', 'agent', 'intelligence'}
         cloud_terms = {'cloud', 'quantum', 'infrastructure', 'api', 'server', 'data', 'chip', 'hardware'}
         software_terms = {'app', 'android', 'apple', 'google', 'code', 'web', 'browser', 'plugin', 'wordpress'}
@@ -135,7 +143,6 @@ class TextMiningEngine:
             'Business & VC': sum(1 for w in words if w in business_terms)
         }
         
-        # Pick category with the most keyword matches
         chosen_category = max(cat_scores, key=cat_scores.get)
         if cat_scores[chosen_category] == 0:
             chosen_category = 'General Tech'
@@ -147,7 +154,6 @@ class TextMiningEngine:
         Generates corpus-level metrics to render charts and tables in Streamlit.
         """
         all_words = [token for words in self.parsed_tokens.values() for token in words]
-        
         word_counts = Counter(all_words).most_common(15)
         
         category_distribution = Counter()
@@ -162,22 +168,48 @@ class TextMiningEngine:
             "category_distribution": dict(category_distribution)
         }
 
-# --- Terminal Testing Block ---
-if __name__ == "__main__":
-    from crawler import run_crawler_pipeline
-    
-    print("🚀 Testing Refactored NLTK Text Mining Engine...\n")
-    _, raw_contents, _ = run_crawler_pipeline(use_fallback=True)
-    
-    mining_engine = TextMiningEngine(raw_contents)
-    corpus_stats = mining_engine.get_corpus_statistics()
-    
-    print("📊 CORPUS METRICS (NLTK Processed):")
-    print(f"  • Total Words Processed: {corpus_stats['total_words_processed']}")
-    print(f"  • Vocabulary Size: {corpus_stats['vocabulary_size']}")
-    print(f"  • Category Distribution: {corpus_stats['category_distribution']}")
-    
-    print("\n🏷️ TOP NLTK TF-IDF KEYWORDS FOR Doc_1:")
-    top_words = mining_engine.extract_top_keywords("Doc_1", top_n=5)
-    for word, tfidf_val in top_words:
-        print(f"  • {word}: {tfidf_val:.4f}")
+# ==============================================================================
+# CLASS 2: TEXT MINER (Used for Task C comparative benchmarking)
+# ==============================================================================
+class TextMiner:
+    def __init__(self):
+        self.stop_words = set(stopwords.words('english'))
+        self.stemmer = PorterStemmer()
+        self.lemmatizer = WordNetLemmatizer()
+
+    def preprocess_text(self, text, normalization_strategy='stemming'):
+        """Cleans and normalizes text based on Stemming or Lemmatization."""
+        tokens = nltk.word_tokenize(text.lower())
+        tokens = [word for word in tokens if word.isalpha() and word not in self.stop_words]
+
+        if normalization_strategy == 'stemming':
+            tokens = [self.stemmer.stem(word) for word in tokens]
+        elif normalization_strategy == 'lemmatization':
+            tokens = [self.lemmatizer.lemmatize(word) for word in tokens]
+
+        return " ".join(tokens)
+
+    def build_features(self, documents, norm_strategy='stemming', vectorizer_type='tfidf'):
+        """Builds the feature matrix and returns performance metrics for Task C comparison."""
+        start_time = time.time()
+        
+        processed_docs = [self.preprocess_text(doc, norm_strategy) for doc in documents]
+        
+        if vectorizer_type == 'tfidf':
+            vectorizer = TfidfVectorizer()
+        elif vectorizer_type == 'count':
+            vectorizer = CountVectorizer()
+        else:
+            raise ValueError("Unsupported vectorizer type. Choose 'tfidf' or 'count'.")
+            
+        feature_matrix = vectorizer.fit_transform(processed_docs)
+        vocab_size = len(vectorizer.get_feature_names_out())
+        end_time = time.time()
+        
+        return {
+            'matrix': feature_matrix,
+            'vectorizer': vectorizer,
+            'vocab_size': vocab_size,
+            'time_taken': end_time - start_time,
+            'processed_docs': processed_docs
+        }
