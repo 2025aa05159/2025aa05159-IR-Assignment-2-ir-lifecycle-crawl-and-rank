@@ -13,7 +13,7 @@ import os
 
 # Import custom IR modules
 from crawler import run_crawler_pipeline
-from text_mining import TextMiningEngine
+from text_mining import TextMiningEngine, TextMiner
 from web_search import WebSearchEngine
 from recommender import RecommenderEngine
 from evaluation import IREvaluator
@@ -27,7 +27,7 @@ RSS_SEEDS = [
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="Tech IR System | Assignment 2",
+    page_title=" Fullstack-IR | Assignment 2",
     page_icon="🔎",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -61,7 +61,7 @@ st.markdown(
 )
 
 # --- APPLICATION TITLE & BANNER ---
-st.title("🔎 FullStack-IR: A Streamlit Platform for Heterogeneous Data Ingestion, Search,Analytics & Recommendation System")
+st.title("🔎 FullStack-IR: A Streamlit Platform for Heterogeneous Data Ingestion, Search, Analytics & Recommendation")
 st.caption("IR— Assignment 2 | A Streamlit-Driven End-to-End Information Retrieval Lifecycle Engine")
 
 st.markdown("---")
@@ -177,6 +177,7 @@ navigation_choice = st.sidebar.radio(
         "🏠 Overview Dashboard",
         "🕷️ Web Crawling",
         "📊 Text Mining & Indexing",
+        "⚖️ Comparative Analysis (Task C)",
         "🔍 Search & PageRank",
         "💡 Recommender Panel",
         "📈 System Evaluation"
@@ -268,7 +269,48 @@ elif navigation_choice == "📊 Text Mining & Indexing":
         st.success(f"**Assigned Category:** {doc_category}")
 
 # ==============================================================================
-# TAB 4: SEARCH & PAGERANK
+# TAB 4: COMPARATIVE ANALYSIS (NEW - TASK C)
+# ==============================================================================
+elif navigation_choice == "⚖️ Comparative Analysis (Task C)":
+    st.header("⚖️ Comparative Analysis of Preprocessing (Task C)")
+    st.write("Compare how different normalization and vectorization strategies affect the vocabulary size and processing time.")
+
+    # Extract raw documents from the initialized system
+    raw_documents = list(ir_system["contents"].values())
+
+    miner = TextMiner()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Strategy A")
+        norm_a = st.selectbox("Normalization A", ['stemming', 'lemmatization'], key='norm_a')
+        vec_a = st.selectbox("Vectorization A", ['tfidf', 'count'], key='vec_a')
+        
+    with col2:
+        st.subheader("Strategy B")
+        norm_b = st.selectbox("Normalization B", ['lemmatization', 'stemming'], key='norm_b')
+        vec_b = st.selectbox("Vectorization B", ['count', 'tfidf'], key='vec_b')
+
+    if st.button("Run Comparative Analysis"):
+        with st.spinner("Processing Strategy A..."):
+            results_a = miner.build_features(raw_documents, norm_strategy=norm_a, vectorizer_type=vec_a)
+        
+        with st.spinner("Processing Strategy B..."):
+            results_b = miner.build_features(raw_documents, norm_strategy=norm_b, vectorizer_type=vec_b)
+            
+        st.write("### Results")
+        comparison_df = pd.DataFrame({
+            "Metric": ["Vocabulary Size (Features)", "Processing Time (Seconds)"],
+            f"Strategy A ({norm_a} + {vec_a})": [results_a['vocab_size'], f"{results_a['time_taken']:.4f}"],
+            f"Strategy B ({norm_b} + {vec_b})": [results_b['vocab_size'], f"{results_b['time_taken']:.4f}"]
+        })
+        
+        st.table(comparison_df)
+        
+        st.info("**Observation:** Notice how Lemmatization generally produces a slightly different vocabulary size than Stemming, and CountVectorizer differs from TF-IDF in feature weighting (though they share the same vocabulary if normalization is identical).")
+
+# ==============================================================================
+# TAB 5: SEARCH & PAGERANK
 # ==============================================================================
 elif navigation_choice == "🔍 Search & PageRank":
     st.header("🔍 Intelligent Search & Web Graph Ranking")
@@ -305,7 +347,7 @@ elif navigation_choice == "🔍 Search & PageRank":
         st.dataframe(auth_df, use_container_width=True)
 
 # ==============================================================================
-# TAB 5: RECOMMENDER PANEL
+# TAB 6: RECOMMENDER PANEL
 # ==============================================================================
 elif navigation_choice == "💡 Recommender Panel":
     st.header("💡 Personalized Recommender Engine")
@@ -334,7 +376,7 @@ elif navigation_choice == "💡 Recommender Panel":
     st.dataframe(rec_df, use_container_width=True)
 
 # ==============================================================================
-# TAB 6: SYSTEM EVALUATION
+# TAB 7: SYSTEM EVALUATION
 # ==============================================================================
 elif navigation_choice == "📈 System Evaluation":
     st.header("📈 Evaluation Metrics & IR Benchmarking")
