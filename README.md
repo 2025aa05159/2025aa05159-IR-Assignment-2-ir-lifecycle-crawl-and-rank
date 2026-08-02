@@ -3,9 +3,9 @@
 **Group Number:** Group 39  
 
 ### 👥 Team Members & Contributions
-* **Suresh Kumar** * **ID:** 2025aa05159 | **Email:** 2025aa05159@wilp.bits-pilani.ac.in[cite: 2]
-* **Sayyad Mohd Abulasar Mohd Abuzafar Qaiser** * **ID:** 2025aa05147 | **Email:** 2025aa05147@wilp.bits-pilani.ac.in[cite: 2]
-* **Jitendra Rajput** * **ID:** 2025aa05145 | **Email:** 2025aa05145@wilp.bits-pilani.ac.in[cite: 2]
+* **Suresh Kumar** * **ID:** 2025aa05159 | **Email:** 2025aa05159@wilp.bits-pilani.ac.in
+* **Sayyad Mohd Abulasar Mohd Abuzafar Qaiser** * **ID:** 2025aa05147 | **Email:** 2025aa05147@wilp.bits-pilani.ac.in
+* **Jitendra Rajput** * **ID:** 2025aa05145 | **Email:** 2025aa05145@wilp.bits-pilani.ac.in
 
 ## 1. Problem Statement
 The goal of this assignment is to extend foundational Information Retrieval concepts into a complex, web-oriented ecosystem. This involves:
