@@ -1,0 +1,5 @@
+doc_id,title,source,url,content
+Doc_1,Introduction to Machine Learning,ArXiv,https://arxiv.org/abs/ml,Machine learning is a field of artificial intelligence that uses statistical models to enable computers to learn from data.
+Doc_2,Natural Language Processing Basics,ArXiv,https://arxiv.org/abs/nlp,Natural language processing allows machines to understand and interpret human language using tokenization and lemmatization.
+Doc_3,Information Retrieval Systems,Tech Blog,https://techblog.com/ir,An information retrieval system ranks relevant documents for a user query using algorithms like TF-IDF and PageRank.
+Doc_4,Deep Learning in Computer Vision,ArXiv,https://arxiv.org/abs/cv,Deep learning models like convolutional neural networks have revolutionized image recognition and computer vision tasks.
